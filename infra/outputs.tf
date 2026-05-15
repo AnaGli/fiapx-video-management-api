@@ -27,6 +27,6 @@ output "vpc_id" {
 }
 
 output "security_group_id" {
-  value       = aws_security_group.sg.id
+  value       = data.aws_security_group.default_sg.id
   description = "Security Group ID"
 }

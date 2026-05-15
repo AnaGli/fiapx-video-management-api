@@ -217,3 +217,10 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 .DS_Store
+
+# Local .terraform directories
+.terraform*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
