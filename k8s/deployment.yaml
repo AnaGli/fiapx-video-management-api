@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fastapi-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fastapi-app
+  template:
+    metadata:
+      labels:
+        app: fastapi-app
+    spec:
+      initContainers:
+      - name: migration
+        image: anaglislere/tech-challenge:latest
+        command: ["sh", "-c", "alembic upgrade head"]
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef: 
+              name: fastapi-secrets
+              key: DATABASE_URL
+      containers:
+      - name: fastapi
+        image: anaglislere/tech-challenge:latest
+        resources:
+          requests:
+            cpu: "100m"     
+            memory: "128Mi" 
+          limits:
+            cpu: "500m"     
+            memory: "256Mi"  
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: fastapi-secrets
+              key: DATABASE_URL
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: fastapi-secrets
+              key: SECRET_KEY
+        - name: ALGORITHM
+          valueFrom:
+            secretKeyRef:
+              name: fastapi-secrets
+              key: ALGORITHM
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: fastapi-secrets
+              key: POSTGRES_USER
+        command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

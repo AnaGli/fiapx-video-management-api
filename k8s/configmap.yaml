@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fastapi-config
+data:
+  PYTHONPATH: /app
+  DATABASE_HOST: fastapi-db # Importante: Deve ser o nome do seu SERVICE do banco
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: fastapi-db
+  LOG_LEVEL: INFO
