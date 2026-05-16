@@ -90,12 +90,11 @@ jobs:
       - name: Create Kubernetes Secret
         run: |
           kubectl create secret generic fastapi-secrets \
-            --from-literal=POSTGRES_USER="${{ secrets.DB_USER }}" \
-            --from-literal=POSTGRES_PASSWORD="${{ secrets.DB_PASSWORD }}" \
-            --from-literal=DATABASE_URL="postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@${{ secrets.DB_HOST }}:5432/${{ secrets.DB_NAME }}" \
-            --from-literal=SECRET_KEY="${{ secrets.SECRET_KEY }}" \
-            --from-literal=ALGORITHM="HS256" \
-            --dry-run=client -o yaml | kubectl apply -f -
+            --from-literal=POSTGRES_USER='${{ secrets.DB_USER }}' \
+            --from-literal=POSTGRES_PASSWORD='${{ secrets.DB_PASSWORD }}' \
+            --from-literal=DATABASE_URL='postgresql://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@${{ secrets.DB_HOST }}:5432/${{ secrets.DB_NAME }}' \
+            --from-literal=SECRET_KEY='${{ secrets.SECRET_KEY }}' \
+            --from-literal=ALGORITHM='HS256'
       
       - name: Kube Apply
         run: |
