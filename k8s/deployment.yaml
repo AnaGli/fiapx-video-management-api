@@ -25,64 +25,71 @@ spec:
       containers:
       - name: fastapi
         image: anaglislere/tech-challenge:latest
+        command:
+          - ddtrace-run
+          - uvicorn
+          - app.main:app
+          - --host
+          - 0.0.0.0
+          - --port
+          - "8000"
+        ports:
+          - containerPort: 8000
         resources:
           requests:
-            cpu: "100m"     
-            memory: "128Mi" 
+            cpu: "100m"
+            memory: "128Mi"
           limits:
-            cpu: "500m"     
-            memory: "256Mi"  
-        ports:
-        - containerPort: 8000
+            cpu: "500m"
+            memory: "256Mi"
         env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: fastapi-secrets
-              key: DATABASE_URL
-        - name: SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: fastapi-secrets
-              key: SECRET_KEY
-        - name: ALGORITHM
-          valueFrom:
-            secretKeyRef:
-              name: fastapi-secrets
-              key: ALGORITHM
-        - name: POSTGRES_USER
-          valueFrom:
-            secretKeyRef:
-              name: fastapi-secrets
-              key: POSTGRES_USER
-          command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-        - name: DD_SERVICE
-          value: fastapi-app
-        - name: DD_ENV
-          value: dev
-        - name: DD_VERSION
-          value: "1.0.0"
-        - name: DD_TRACE_ENABLED
-          value: "true"
-        - name: DD_LOGS_INJECTION
-          value: "true"
-        - name: DD_AGENT_HOST
-          valueFrom:
-            fieldRef:
-              fieldPath: status.hostIP
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 8000
-              scheme: HTTP
-            initialDelaySeconds: 15
-            periodSeconds: 10
-            failureThreshold: 3
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 8000
-              scheme: HTTP
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            failureThreshold: 3
+          - name: DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: fastapi-secrets
+                key: DATABASE_URL
+          - name: SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: fastapi-secrets
+                key: SECRET_KEY
+          - name: ALGORITHM
+            valueFrom:
+              secretKeyRef:
+                name: fastapi-secrets
+                key: ALGORITHM
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                name: fastapi-secrets
+                key: POSTGRES_USER
+          - name: DD_SERVICE
+            value: fastapi-app
+          - name: DD_ENV
+            value: dev
+          - name: DD_VERSION
+            value: "1.0.0"
+          - name: DD_TRACE_ENABLED
+            value: "true"
+          - name: DD_LOGS_INJECTION
+            value: "true"
+          - name: DD_AGENT_HOST
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          failureThreshold: 3
