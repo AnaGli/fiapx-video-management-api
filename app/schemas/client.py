@@ -14,17 +14,19 @@ class ClientBase(BaseModel):
 
 
 class ClientCreate(ClientBase):
-    pass
+    is_active: bool = True
 
 
 class ClientUpdate(BaseModel):
     name: str | None = None
     cpf: str | None = None
     email: str | None = None
+    is_active: bool | None = None
 
 
 class ClientResponse(ClientBase):
     id: int
+    is_active: bool
 
     class Config:
         from_attributes = True

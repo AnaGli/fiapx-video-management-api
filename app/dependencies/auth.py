@@ -1,6 +1,7 @@
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
+import os
 
 from app.database import SessionLocal
 from app.models.user import User
@@ -30,3 +31,31 @@ def get_current_user(
         raise HTTPException(status_code=401, detail="User inactive or not found")
 
     return user
+
+
+def get_jws_cpf(token: str = Depends(oauth2_scheme)) -> str:
+    """Verifica um token JWS vindo de outro serviço e retorna o `cpf` do claim.
+
+    A implementação tenta usar primeiro a chave pública configurada em
+    `EXTERNAL_JWS_PUBLIC_KEY` (PEM) ou, se não presente, `EXTERNAL_JWS_SECRET`.
+    O algoritmo pode ser configurado com `EXTERNAL_JWS_ALGORITHM` (padrão 'RS256').
+    """
+    if not token:
+        raise HTTPException(status_code=401, detail="Token required")
+
+    key = os.getenv("EXTERNAL_JWS_PUBLIC_KEY") or os.getenv("EXTERNAL_JWS_SECRET")
+    alg = os.getenv("EXTERNAL_JWS_ALGORITHM") or "RS256"
+
+    if not key:
+        raise HTTPException(status_code=500, detail="JWS verification key not configured")
+
+    try:
+        payload = jwt.decode(token, key, algorithms=[alg])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid JWS token")
+
+    cpf = payload.get("cpf")
+    if not cpf:
+        raise HTTPException(status_code=401, detail="Token missing cpf claim")
+
+    return cpf

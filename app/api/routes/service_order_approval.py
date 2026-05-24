@@ -8,6 +8,7 @@ from app.schemas.service_order import (
     ApproveServiceOrderRequest,
     ServiceOrderResponse,
 )
+from app.dependencies.auth import get_jws_cpf
 
 router = APIRouter(
     prefix="/service-orders",
@@ -24,7 +25,7 @@ def get_approval_service(db: Session = Depends(get_db)):
 )
 def approve_order(
     order_id: int,
-    payload: ApproveServiceOrderRequest,
     service: ServiceOrderApprovalService = Depends(get_approval_service),
+    token_cpf: str = Depends(get_jws_cpf),
 ):
-    return service.approve(order_id, payload.cpf)
+    return service.approve(order_id, token_cpf)
