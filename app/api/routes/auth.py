@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -8,11 +9,12 @@ from app.core.security import verify_password, create_access_token
 from app.schemas.auth import Token
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
+logger = logging.getLogger(__name__)
 
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends()):
     db: Session = SessionLocal()
-    print(f"Attempting login for user: {form_data.username}")
+    logger.info(f"Attempting login for user: {form_data.username}")
     user = db.query(User).filter(User.username == form_data.username).first()
     db.close()
 

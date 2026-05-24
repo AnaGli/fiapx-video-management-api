@@ -64,10 +64,6 @@ def test_approve_service_order_success(client, db_session):
         json={"cpf": "129.139.610-10"},
     )
 
-    print("STATUS:", approve_resp.status_code)
-    print("BODY:", approve_resp.json())
-    print("TEXT:", approve_resp.text)
-
     assert approve_resp.status_code == 200, approve_resp.text
 
     data = approve_resp.json()
