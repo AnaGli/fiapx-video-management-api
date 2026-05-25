@@ -133,13 +133,12 @@ class ServiceOrderService:
                     "status_to": new_status,
                 }
             )
-
+            
             logger.info(
                 "Service order status duration",
                 extra={
                     "event_type": "service_order_status_duration",
-                    "service_order_id": order.id,
-                    "status": old_status,
+                    "service_order_status": old_status,
                     "status_from": old_status,
                     "status_to": new_status,
                     "duration_minutes": duration_minutes,
