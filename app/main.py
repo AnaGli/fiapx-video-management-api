@@ -14,7 +14,11 @@ from app.api.routes.vehicles import router as vehicles_router
 
 from app.core.logging_config import setup_logging
 from app.core.middleware.correlation_id import CorrelationIdMiddleware
+from ddtrace import patch_all
+from ddtrace.contrib.asgi import TraceMiddleware
 
+
+patch_all()
 
 setup_logging()
 
@@ -25,7 +29,7 @@ app = FastAPI(
     openapi_url="/openapi.json"
 )
 
-app.add_middleware(CorrelationIdMiddleware)
+app.add_middleware(TraceMiddleware)
 
 
 @app.get("/health", tags=["Health"])
