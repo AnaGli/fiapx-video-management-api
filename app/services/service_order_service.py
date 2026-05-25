@@ -97,6 +97,10 @@ class ServiceOrderService:
         order = self._get_order_or_404(order_id)
         try:
             old_status = order.status
+
+            if old_status == new_status:
+                return order
+
             now = datetime.now(timezone.utc)
 
             previous_status_at = order.updated_at
@@ -106,13 +110,19 @@ class ServiceOrderService:
                     tzinfo=timezone.utc
                 )
 
-            duration_ms = int(
-                (now - previous_status_at).total_seconds() * 1000
+            duration_minutes = round(
+                max(
+                    (now - previous_status_at).total_seconds() / 60,
+                    0
+                ),
+                2
             )
 
-            order.status = new_status
-
-            updated_order = repo.update_status(self.db, order, new_status)
+            updated_order = repo.update_status(
+                self.db,
+                order,
+                new_status
+            )
 
             logger.info(
                 "Service order status changed",
@@ -130,7 +140,9 @@ class ServiceOrderService:
                     "event_type": "service_order_status_duration",
                     "service_order_id": order.id,
                     "status": old_status,
-                    "duration_ms": duration_ms,
+                    "status_from": old_status,
+                    "status_to": new_status,
+                    "duration_minutes": duration_minutes,
                 }
             )
 
