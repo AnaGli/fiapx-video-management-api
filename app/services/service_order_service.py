@@ -1,8 +1,12 @@
+import logging
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from app.repositories import service_order_repository as repo
 from app.models.service_order import ServiceOrder
 from app.schemas.service_order import ServiceOrderCreate, ServiceOrderItemCreate, ServiceOrderPut
+from app.core.logging_config import set_log_context
+
+logger = logging.getLogger(__name__)
 
 class ServiceOrderService:
     def __init__(self, db: Session):
@@ -21,7 +25,50 @@ class ServiceOrderService:
         return self._get_order_or_404(order_id)
 
     def create(self, data: ServiceOrderCreate):
-        return repo.create_order(self.db, data.client_id, data.vehicle_id)
+        try:
+            order = repo.create_order(
+                self.db,
+                data.client_id,
+                data.vehicle_id
+            )
+
+            set_log_context(
+                service_order_id=order.id,
+                business_operation="service_order_created"
+            )
+
+            logger.info(
+                "Service order created successfully",
+                extra={
+                    "event_type": "service_order_created",
+                    "business_status": "success",
+                    "service_order_id": order.id,
+                    "client_id": data.client_id,
+                    "vehicle_id": data.vehicle_id,
+                }
+            )
+
+            return order
+
+        except Exception as exc:
+
+            set_log_context(
+                business_operation="service_order_created"
+            )
+
+            logger.exception(
+                "Failed to create service order",
+                extra={
+                    "event_type": "service_order_created",
+                    "business_status": "error",
+                    "client_id": data.client_id,
+                    "vehicle_id": data.vehicle_id,
+                    "error_type": type(exc).__name__,
+                    "error_message": str(exc),
+                }
+            )
+
+            raise
 
     def add_item(self, order_id: int, data: ServiceOrderItemCreate):
         order = self._get_order_or_404(order_id)
