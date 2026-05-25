@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from app.repositories import service_order_repository as repo
@@ -95,7 +96,45 @@ class ServiceOrderService:
     def update_status(self, order_id: int, new_status: str):
         order = self._get_order_or_404(order_id)
         try:
-            return repo.update_status(self.db, order, new_status)
+            old_status = order.status
+            now = datetime.now(timezone.utc)
+
+            previous_status_at = order.updated_at
+
+            if previous_status_at.tzinfo is None:
+                previous_status_at = previous_status_at.replace(
+                    tzinfo=timezone.utc
+                )
+
+            duration_ms = int(
+                (now - previous_status_at).total_seconds() * 1000
+            )
+
+            order.status = new_status
+
+            updated_order = repo.update_status(self.db, order, new_status)
+
+            logger.info(
+                "Service order status changed",
+                extra={
+                    "event_type": "service_order_status_changed",
+                    "service_order_id": order.id,
+                    "status_from": old_status,
+                    "status_to": new_status,
+                }
+            )
+
+            logger.info(
+                "Service order status duration",
+                extra={
+                    "event_type": "service_order_status_duration",
+                    "service_order_id": order.id,
+                    "status": old_status,
+                    "duration_ms": duration_ms,
+                }
+            )
+
+            return updated_order
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
 
