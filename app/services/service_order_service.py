@@ -5,6 +5,7 @@ from fastapi import HTTPException
 from app.repositories import service_order_repository as repo
 from app.models.service_order import ServiceOrder
 from app.schemas.service_order import ServiceOrderCreate, ServiceOrderItemCreate, ServiceOrderPut
+from ddtrace import tracer
 from app.core.logging_config import set_log_context
 
 logger = logging.getLogger(__name__)
@@ -133,15 +134,31 @@ class ServiceOrderService:
                     "status_to": new_status,
                 }
             )
-            
+
             logger.info(
-                "Service order status duration",
+                "SO workflow stage duration",
                 extra={
-                    "event_type": "service_order_status_duration",
-                    "service_order_status": old_status,
-                    "status_from": old_status,
-                    "status_to": new_status,
-                    "duration_minutes": duration_minutes,
+                    # Evento
+                    "so_event_type": "so_workflow_stage_duration",
+                    "so_business_operation": "so_workflow_stage_duration",
+
+                    # Identificação
+                    "so_id": order.id,
+
+                    # Workflow
+                    "so_workflow_stage": old_status,
+                    "so_stage_from": old_status,
+                    "so_stage_to": new_status,
+
+                    # Métrica
+                    "so_duration_minutes": duration_minutes,
+
+                    # Tags explícitas Datadog
+                    "ddtags": (
+                        f"so_workflow_stage:{old_status},"
+                        f"so_stage_from:{old_status},"
+                        f"so_stage_to:{new_status}"
+                    ),
                 }
             )
 
