@@ -5,7 +5,7 @@ import os
 
 from app.database import SessionLocal
 from app.models.user import User
-from app.core.security import jws_bearer
+from app.core.security import SECRET_KEY, ALGORITHM, jws_bearer
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 jws_bearer = HTTPBearer(auto_error=False)
