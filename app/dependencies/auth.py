@@ -5,7 +5,7 @@ import os
 
 from app.database import SessionLocal
 from app.models.user import User
-from app.core.security import SECRET_KEY, ALGORITHM, jws_bearer
+from app.core.security import jws_bearer
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 jws_bearer = HTTPBearer(auto_error=False)
@@ -48,7 +48,7 @@ def get_jws_cpf(token=Security(jws_bearer)) -> str:
     jwt_token = token.credentials
 
     secret_key = os.getenv("SECRET_KEY")
-    algorithm = os.getenv(ALGORITHM)
+    algorithm = os.getenv("ALGORITHM")
 
     if not secret_key:
         raise HTTPException(

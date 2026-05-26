@@ -1,0 +1,70 @@
+@startuml
+
+title Fluxo de Autenticação e Criação de Ordem de Serviço
+
+actor Usuario
+
+participant "API Gateway" as APIGW
+participant "Lambda Auth" as LAMBDA
+database "RDS PostgreSQL" as RDS
+participant "FastAPI App (EKS)" as FASTAPI
+participant "JWT Middleware" as JWT
+participant "Service Order API" as SOAPI
+participant "Datadog Agent" as DDAGENT
+participant "Datadog" as DD
+
+== Autenticação ==
+
+Usuario -> APIGW : POST /login\nCPF
+
+APIGW -> LAMBDA : Encaminha request
+
+LAMBDA -> RDS : SELECT client by CPF
+
+RDS --> LAMBDA : Cliente válido
+
+LAMBDA -> LAMBDA : Gerar JWT (HS256)
+
+LAMBDA --> APIGW : JWT
+
+APIGW --> Usuario : 200 OK + Token
+
+== Criação de Ordem de Serviço ==
+
+Usuario -> APIGW : POST /api/service-orders\nAuthorization: Bearer JWT
+
+APIGW -> FASTAPI : Encaminha request
+
+FASTAPI -> JWT : Validar JWT
+
+JWT -> JWT : Verifica assinatura/token
+
+JWT --> FASTAPI : CPF autorizado
+
+FASTAPI -> SOAPI : Criar ordem serviço
+
+SOAPI -> RDS : INSERT service_order
+
+RDS --> SOAPI : Ordem criada
+
+SOAPI --> FASTAPI : Success
+
+par Logs Estruturados
+
+    FASTAPI -> DDAGENT : JSON Logs
+
+else Tracing
+
+    FASTAPI -> DDAGENT : Traces / Spans
+
+end
+
+DDAGENT -> DD : Logs + Traces + Métricas
+
+DD --> DD : APM / Monitoring / Alerts
+
+FASTAPI --> APIGW : 201 Created
+
+APIGW --> Usuario : Ordem criada
+
+@enduml
