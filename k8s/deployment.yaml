@@ -1,95 +1,56 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: fastapi-app
+  name: video-management-api
+  labels:
+    app: video-management-api
 spec:
   replicas: 1
+
   selector:
     matchLabels:
-      app: fastapi-app
+      app: video-management-api
+
   template:
     metadata:
       labels:
-        app: fastapi-app
+        app: video-management-api
+
     spec:
-      initContainers:
-      - name: migration
-        image: anaglislere/tech-challenge:latest
-        command: ["sh", "-c", "alembic upgrade head"]
-        env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef: 
-              name: fastapi-secrets
-              key: DATABASE_URL
       containers:
-      - name: fastapi
-        image: anaglislere/tech-challenge:latest
-        command:
-          - ddtrace-run
-          - uvicorn
-          - app.main:app
-          - --host
-          - 0.0.0.0
-          - --port
-          - "8000"
-        ports:
-          - containerPort: 8000
-        resources:
-          requests:
-            cpu: "100m"
-            memory: "128Mi"
-          limits:
-            cpu: "500m"
-            memory: "256Mi"
-        env:
-          - name: DATABASE_URL
-            valueFrom:
-              secretKeyRef:
-                name: fastapi-secrets
-                key: DATABASE_URL
-          - name: SECRET_KEY
-            valueFrom:
-              secretKeyRef:
-                name: fastapi-secrets
-                key: SECRET_KEY
-          - name: ALGORITHM
-            valueFrom:
-              secretKeyRef:
-                name: fastapi-secrets
-                key: ALGORITHM
-          - name: POSTGRES_USER
-            valueFrom:
-              secretKeyRef:
-                name: fastapi-secrets
-                key: POSTGRES_USER
-          - name: DD_SERVICE
-            value: fastapi-app
-          - name: DD_ENV
-            value: dev
-          - name: DD_VERSION
-            value: "1.0.0"
-          - name: DD_TRACE_ENABLED
-            value: "true"
-          - name: DD_LOGS_INJECTION
-            value: "true"
-          - name: DD_AGENT_HOST
-            valueFrom:
-              fieldRef:
-                fieldPath: status.hostIP
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-            scheme: HTTP
-          initialDelaySeconds: 15
-          periodSeconds: 10
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-            scheme: HTTP
-          initialDelaySeconds: 5
-          periodSeconds: 10
-          failureThreshold: 3
+        - name: video-management-api
+          image: video-management-api:latest
+
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 8000
+
+          envFrom:
+            - configMapRef:
+                name: video-management-api-config
+
+            - secretRef:
+                name: video-management-api-secrets
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 20
+
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"

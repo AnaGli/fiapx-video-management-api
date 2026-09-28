@@ -1,10 +1,23 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: fastapi-config
+  name: video-management-api-config
 data:
-  PYTHONPATH: /app
-  DATABASE_HOST: fastapi-db # Importante: Deve ser o nome do seu SERVICE do banco
-  DATABASE_PORT: "5432"
-  DATABASE_NAME: fastapi-db
-  LOG_LEVEL: INFO
+  APP_NAME: "FIAP X Video Management API"
+  APP_VERSION: "1.0.0"
+
+  DB_HOST: "video-api-db.video-infra.svc.cluster.local"
+  DB_PORT: "5432"
+  DB_NAME: "video_management"
+
+  # Infraestrutura compartilhada — vive no namespace video-infra,
+  # gerenciada pelo repositório video-infra-k8s
+  RABBITMQ_HOST: "rabbitmq.video-infra.svc.cluster.local"
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_INPUT_QUEUE: "video-processing"
+  RABBITMQ_COMPLETED_QUEUE: "video-processing-completed"
+  RABBITMQ_FAILED_QUEUE: "video-processing-failed"
+
+  S3_ENDPOINT_URL: "http://localstack.video-infra.svc.cluster.local:4566"
+  S3_REGION: "us-east-1"
+  S3_BUCKET: "videos"

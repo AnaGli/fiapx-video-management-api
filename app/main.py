@@ -1,59 +1,87 @@
+import logging
+from contextlib import asynccontextmanager
+from threading import Thread
+
 from fastapi import FastAPI
 
 from app.api.routes.auth import router as auth_router
-from app.api.routes.clients import router as clients_router
-from app.api.routes.metrics import router as metrics_router
-from app.api.routes.parts import router as parts_router
-from app.api.routes.service_order_approval import (
-    router as service_order_approval_router
+from app.api.routes.videos import router as videos_router
+from app.core.config import settings
+from app.messaging.handlers import (
+    handle_video_completed,
+    handle_video_failed,
 )
-from app.api.routes.service_orders import router as service_orders_router
-from app.api.routes.services import router as services_router
-from app.api.routes.stock_movements import router as stock_router
-from app.api.routes.vehicles import router as vehicles_router
+from app.messaging.rabbitmq import (
+    RabbitMQConsumer,
+    RabbitMQInitializer,
+)
 
-from app.core.logging_config import setup_logging
-from app.core.middleware.correlation_id import CorrelationIdMiddleware
-from ddtrace import patch_all
-from ddtrace.contrib.asgi import TraceMiddleware
+logging.basicConfig(
+    level=logging.INFO,
+)
+
+logger = logging.getLogger(__name__)
 
 
-patch_all()
+def start_rabbitmq_consumer() -> None:
+    logger.info("Starting RabbitMQ result consumer")
 
-setup_logging()
+    consumer = RabbitMQConsumer()
+
+    consumer.consume_results(
+        completed_callback=handle_video_completed,
+        failed_callback=handle_video_failed,
+    )
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create the queues owned by the API.
+    rabbitmq_initializer = RabbitMQInitializer()
+    rabbitmq_initializer.initialize()
+
+    logger.info("RabbitMQ queues initialized")
+
+    # Start result consumer in a separate thread.
+    consumer_thread = Thread(
+        target=start_rabbitmq_consumer,
+        name="rabbitmq-result-consumer",
+        daemon=True,
+    )
+
+    consumer_thread.start()
+
+    logger.info("RabbitMQ result consumer started")
+
+    yield
+
 
 app = FastAPI(
-    title="Tech Challenge API",
-    version="1.0.0",
-    docs_url="/docs",
-    openapi_url="/openapi.json"
+    title=settings.APP_NAME,
+    description=(
+        "API responsible for user management " "and video processing requests."
+    ),
+    version=settings.APP_VERSION,
+    lifespan=lifespan,
 )
 
-app.add_middleware(TraceMiddleware)
+
+@app.get(
+    "/health",
+    tags=["Health"],
+)
+def health_check():
+    return {"status": "ok"}
 
 
-@app.get("/health", tags=["Health"])
-def health():
+app.include_router(
+    auth_router,
+    prefix="/auth",
+    tags=["Authentication"],
+)
 
-    return {
-        "status": "healthy"
-    }
-
-
-app.include_router(auth_router)
-
-app.include_router(clients_router)
-
-app.include_router(vehicles_router)
-
-app.include_router(services_router)
-
-app.include_router(parts_router)
-
-app.include_router(stock_router)
-
-app.include_router(service_orders_router)
-
-app.include_router(service_order_approval_router)
-
-app.include_router(metrics_router)
+app.include_router(
+    videos_router,
+    prefix="/api/videos",
+    tags=["Videos"],
+)

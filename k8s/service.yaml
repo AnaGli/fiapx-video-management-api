@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: fastapi-service
+  name: video-management-api
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
-    app: fastapi-app
+    app: video-management-api
   ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 8000
+    - protocol: TCP
+      port: 80
+      targetPort: 8000

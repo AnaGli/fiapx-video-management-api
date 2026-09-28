@@ -1,25 +1,62 @@
-import logging
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.database import SessionLocal
-from app.models.user import User
-from app.core.security import verify_password, create_access_token
-from app.schemas.auth import Token
+from app.dependencies.database import get_db
+from app.schemas.auth import (
+    LoginRequest,
+    TokenResponse,
+    UserCreate,
+    UserResponse,
+)
+from app.services.auth_service import AuthService
 
-router = APIRouter(prefix="/auth", tags=["Auth"])
-logger = logging.getLogger(__name__)
 
-@router.post("/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    db: Session = SessionLocal()
-    logger.info(f"Attempting login for user: {form_data.username}")
-    user = db.query(User).filter(User.username == form_data.username).first()
-    db.close()
+router = APIRouter()
 
-    if not user or not verify_password(form_data.password, user.password_hash):
-        raise HTTPException(status_code=400, detail="Invalid credentials")
 
-    token = create_access_token(subject=user.username)
-    return {"access_token": token}
+@router.post(
+    "/register",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def register(
+    data: UserCreate,
+    db: Session = Depends(get_db),
+):
+    service = AuthService(db)
+
+    try:
+        return service.register(data)
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        )
+
+
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+)
+def login(
+    data: LoginRequest,
+    db: Session = Depends(get_db),
+):
+    service = AuthService(db)
+
+    try:
+        access_token = service.login(
+            username=data.username,
+            password=data.password,
+        )
+
+        return TokenResponse(
+            access_token=access_token,
+        )
+
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(exc),
+        )

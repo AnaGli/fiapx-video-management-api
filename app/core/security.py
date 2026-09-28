@@ -1,29 +1,67 @@
-import os
 from datetime import datetime, timedelta, timezone
-from jose import jwt
-from passlib.context import CryptContext
-from fastapi.security import HTTPBearer
 
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
+import bcrypt
+from jose import JWTError, jwt
 
-if not SECRET_KEY:
-    raise ValueError("SECRET_KEY environment variable not configured")
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+from app.core.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-jws_bearer = HTTPBearer()
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    password_bytes = password.encode("utf-8")
+    salt = bcrypt.gensalt()
 
-def verify_password(password: str, hashed: str) -> bool:
-    return pwd_context.verify(password, hashed)
+    hashed_password = bcrypt.hashpw(
+        password_bytes,
+        salt,
+    )
 
-def create_access_token(subject: str, expires_delta: timedelta | None = None):
-    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    return hashed_password.decode("utf-8")
+
+
+def verify_password(
+    password: str,
+    hashed_password: str,
+) -> bool:
+    password_bytes = password.encode("utf-8")
+    hashed_password_bytes = hashed_password.encode("utf-8")
+
+    return bcrypt.checkpw(
+        password_bytes,
+        hashed_password_bytes,
+    )
+
+
+def create_access_token(user_id: str) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(
+        minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+    )
+
     payload = {
-        "sub": subject,
+        "sub": user_id,
         "exp": expire,
     }
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+    return jwt.encode(
+        payload,
+        settings.JWT_SECRET_KEY,
+        algorithm=settings.JWT_ALGORITHM,
+    )
+
+
+def decode_access_token(token: str) -> str | None:
+    try:
+        payload = jwt.decode(
+            token,
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM],
+        )
+
+        user_id = payload.get("sub")
+
+        if not user_id:
+            return None
+
+        return str(user_id)
+
+    except JWTError:
+        return None
