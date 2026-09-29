@@ -11,34 +11,38 @@ env:
   IMAGE_TAG: latest
 
 jobs:
-  # build-test:
-  #   name: Build & Test
-  #   runs-on: ubuntu-latest
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v3
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-  #     - name: Setup Python
-  #       uses: actions/setup-python@v4
-  #       with:
-  #         python-version: 3.12
+      - name: Run tests with coverage
+        run: |
+          pytest \
+            --cov=app \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-fail-under=80
+        env:
+          PYTHONPATH: .
+          DATABASE_URL: sqlite:///./test.db
+          JWT_SECRET_KEY: test-secret-key-for-ci
+          JWT_ALGORITHM: HS256
+          JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "30"
 
-  #     - name: Install dependencies
-  #       run: pip install -r requirements.txt
-
-  #     - name: Run tests
-  #       run: pytest
-  #       env:
-  #         PYTHONPATH: .
-  #         DATABASE_URL: sqlite:///./test.db
-  
   build-docker:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
-
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -54,13 +58,12 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/tech-challenge:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/video-management-api:latest
 
   deploy-eks:
     name: Deploy to EKS
     needs: build-docker
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -72,11 +75,12 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: us-east-1
+
       - name: Update Kube Config
         run: |
           aws eks update-kubeconfig \
-          --name EKS-FIAP \
-          --region us-east-1
+            --name EKS-FIAP \
+            --region us-east-1
 
       - name: Create or Update Kubernetes Secret
         run: |
