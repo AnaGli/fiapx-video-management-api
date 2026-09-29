@@ -17,7 +17,7 @@ POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "3"))
 
 PROCESSING_TIMEOUT = int(os.getenv("PROCESSING_TIMEOUT", "300"))
 
-CONCURRENT_UPLOADS = int(os.getenv("CONCURRENT_UPLOADS", "10"))
+CONCURRENT_UPLOADS = int(os.getenv("CONCURRENT_UPLOADS", "30"))
 
 TEST_DATA_DIR = Path(os.getenv("TEST_DATA_DIR", "./test-data"))
 

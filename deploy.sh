@@ -17,13 +17,16 @@ echo "Criando/atualizando Secret da API a partir do .env..."
 kubectl delete secret video-management-api-secrets --ignore-not-found
 kubectl create secret generic video-management-api-secrets --from-env-file=.env
 
+echo "Aplicando ConfigMap..."
+kubectl apply -f k8s/configmap.yaml
+
 echo "Rodando migrations..."
 kubectl delete job video-management-api-migrate --ignore-not-found
 kubectl apply -f k8s/migration-job.yaml
 kubectl wait --for=condition=complete job/video-management-api-migrate --timeout=90s
 
-echo "Aplicando ConfigMap..."
-kubectl apply -f k8s/configmap.yaml
+echo "Aplicando metrics..."
+kubectl apply -f k8s/metrics.yaml
 
 echo "Aplicando Deployment da API..."
 kubectl apply -f k8s/deployment.yaml
