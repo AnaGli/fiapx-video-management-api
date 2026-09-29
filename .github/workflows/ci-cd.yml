@@ -12,23 +12,17 @@ env:
 
 jobs:
   build-test:
-    name: Build & Test via Docker
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Build Docker Image
-        run: docker build -t app-image .
-
-      - name: Run Unit Tests inside Container
-        run: |
-          docker run --rm \
-            -e PYTHONPATH=/app \
-            -e DATABASE_URL="sqlite:///./test.db" \
-            app-image pytest --cov=app tests/
-  
+    - name: Run tests with coverage
+      run: |
+        pytest \
+          --cov=app \
+          --cov-report=term-missing \
+          --cov-report=xml \
+          --cov-fail-under=80
+      env:
+        PYTHONPATH: .
+        DATABASE_URL: sqlite:///./test.db
+        
   build-docker:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
