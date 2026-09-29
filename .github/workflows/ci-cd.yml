@@ -36,6 +36,9 @@ jobs:
         env:
           PYTHONPATH: .
           DATABASE_URL: sqlite:///./test.db
+          JWT_SECRET_KEY: test-secret-key-for-ci
+          JWT_ALGORITHM: HS256
+          JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "30"
 
   build-docker:
     name: Build & Push Docker Image
