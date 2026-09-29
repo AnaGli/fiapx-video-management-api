@@ -12,3 +12,5 @@ pika
 boto3
 requests
 ddtrace
+pytest
+pytest-cov

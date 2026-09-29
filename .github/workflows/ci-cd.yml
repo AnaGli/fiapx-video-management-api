@@ -11,28 +11,23 @@ env:
   IMAGE_TAG: latest
 
 jobs:
-  # build-test:
-  #   name: Build & Test
-  #   runs-on: ubuntu-latest
+  build-test:
+    name: Build & Test via Docker
+    runs-on: ubuntu-latest
 
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v3
+      - name: Build Docker Image
+        run: docker build -t app-image .
 
-  #     - name: Setup Python
-  #       uses: actions/setup-python@v4
-  #       with:
-  #         python-version: 3.12
-
-  #     - name: Install dependencies
-  #       run: pip install -r requirements.txt
-
-  #     - name: Run tests
-  #       run: pytest
-  #       env:
-  #         PYTHONPATH: .
-  #         DATABASE_URL: sqlite:///./test.db
+      - name: Run Unit Tests inside Container
+        run: |
+          docker run --rm \
+            -e PYTHONPATH=/app \
+            -e DATABASE_URL="sqlite:///./test.db" \
+            app-image pytest --cov=app tests/
   
   build-docker:
     name: Build & Push Docker Image
@@ -54,7 +49,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/tech-challenge:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/video-management-api:latest
 
   deploy-eks:
     name: Deploy to EKS
